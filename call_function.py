@@ -18,6 +18,31 @@ def _is_within_working_directory(target_path: Path) -> bool:
         return False
 
 
+def _normalize_relative_path(path: str) -> str:
+    """Normalize a model-provided path so it's relative to the sandbox root.
+
+    Examples:
+    - "calculator" -> "."
+    - "./calculator/foo.py" -> "foo.py"
+    - "pkg/calculator.py" -> "pkg/calculator.py"
+    """
+    if path is None:
+        return path
+    # Normalize separators and strip leading ./
+    normalized = path.replace("\\", "/").lstrip("./")
+    root_name = WORKING_DIRECTORY.name
+
+    # If caller passed the sandbox root ("calculator"), treat as current dir
+    if normalized == root_name:
+        return "."
+    # If caller prefixed with the sandbox name, strip it
+    if normalized.startswith(root_name + "/"):
+        normalized = normalized[len(root_name) + 1:]
+        if normalized == "":
+            return "."
+    return normalized
+
+
 def call_function(function_call_part):
     """
     Executes a function call object with a name and args dict.
@@ -42,7 +67,7 @@ def call_function(function_call_part):
 
     try:
         if function_name == "get_files_info":
-            directory = args.get("directory", ".")
+            directory = _normalize_relative_path(args.get("directory", "."))
             target_path = WORKING_DIRECTORY / directory
 
             # Ensure path is inside calculator
@@ -53,7 +78,7 @@ def call_function(function_call_part):
             return func(str(WORKING_DIRECTORY), directory)
 
         elif function_name == "get_file_content":
-            file_path = args.get("file_path", ".")
+            file_path = _normalize_relative_path(args.get("file_path", "."))
             target_path = WORKING_DIRECTORY / file_path
 
             if not _is_within_working_directory(target_path):
@@ -63,7 +88,7 @@ def call_function(function_call_part):
             return func(str(WORKING_DIRECTORY), file_path)
 
         elif function_name == "write_file":
-            file_path = args.get("file_path")
+            file_path = _normalize_relative_path(args.get("file_path"))
             content = args.get("content", "")
             target_path = WORKING_DIRECTORY / file_path
 
@@ -74,7 +99,7 @@ def call_function(function_call_part):
             return func(str(WORKING_DIRECTORY), file_path, content)
 
         elif function_name == "run_python_file":
-            file_path = args.get("file_path")
+            file_path = _normalize_relative_path(args.get("file_path"))
             args_list = args.get("args", [])
             target_path = WORKING_DIRECTORY / file_path
 
