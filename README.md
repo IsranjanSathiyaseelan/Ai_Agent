@@ -1,4 +1,4 @@
-# Ai_CodeAgent
+# Ai_Agent
 
 Ai_CodeAgent is a Python CLI coding agent powered by Groq. It can answer prompts directly or call local tools to inspect and modify files in a sandboxed directory.
 
